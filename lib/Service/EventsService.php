@@ -39,10 +39,10 @@ use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
+use OCP\EventDispatcher\IEventDispatcher;
+use OCP\EventDispatcher\GenericEvent;
 use OCP\Notification\IManager as INotificationManager;
 use OCP\Notification\INotification;
-use Symfony\Component\EventDispatcher\EventDispatcher;
-use Symfony\Component\EventDispatcher\GenericEvent;
 
 class EventsService {
 
@@ -65,7 +65,7 @@ class EventsService {
 	/** @var IURLGenerator */
 	private $urlGenerator;
 
-	/** @var EventDispatcher */
+	/** @var IEventDispatcher */
 	private $eventDispatcher;
 
 	/** @var CirclesRequest */
@@ -90,7 +90,7 @@ class EventsService {
 	 * @param INotificationManager $notificationManager
 	 * @param IUserManager $userManager
 	 * @param IURLGenerator $urlGenerator
-	 * @param EventDispatcher $eventDispatcher
+	 * @param IEventDispatcher $eventDispatcher
 	 * @param CirclesRequest $circlesRequest
 	 * @param MembersRequest $membersRequest
 	 * @param ConfigService $configService
@@ -99,7 +99,7 @@ class EventsService {
 	public function __construct(
 		$userId, ITimeFactory $time, IActivityManager $activityManager,
 		INotificationManager $notificationManager, IUserManager $userManager, IURLGenerator $urlGenerator,
-		EventDispatcher $eventDispatcher, CirclesRequest $circlesRequest, MembersRequest $membersRequest,
+		IEventDispatcher $eventDispatcher, CirclesRequest $circlesRequest, MembersRequest $membersRequest,
 		ConfigService $configService, MiscService $miscService
 	) {
 		$this->userId = $userId;
@@ -126,21 +126,22 @@ class EventsService {
 	 * @param Circle $circle
 	 */
 	public function onCircleCreation(Circle $circle) {
-		if ($this->configService->getAppValue(ConfigService::CIRCLES_ACTIVITY_ON_CREATION) !== '1'
-			|| ($circle->getType() !== Circle::CIRCLES_PUBLIC
-				&& $circle->getType() !== Circle::CIRCLES_CLOSED)) {
+		if ($circle->getType() !== Circle::CIRCLES_PUBLIC
+				&& $circle->getType() !== Circle::CIRCLES_CLOSED) {
 			return;
 		}
 
-		$event = $this->generateEvent('circles_as_non_member');
-		$event->setSubject('circle_create', ['circle' => json_encode($circle)]);
+		if ($this->configService->getAppValue(ConfigService::CIRCLES_ACTIVITY_ON_CREATION) === '1') {
+			$event = $this->generateEvent('circles_as_non_member');
+			$event->setSubject('circle_create', ['circle' => json_encode($circle)]);
 
-		$this->userManager->callForSeenUsers(
-			function($user) use ($event) {
-				/** @var IUser $user */
-				$this->publishEvent($event, [$user]);
-			}
-		);
+			$this->userManager->callForSeenUsers(
+				function($user) use ($event) {
+					/** @var IUser $user */
+					$this->publishEvent($event, [$user]);
+				}
+			);
+		}
 
 		$this->dispatch('\OCA\Circles::onCircleCreation', ['circle' => $circle]);
 	}
@@ -213,6 +214,7 @@ class EventsService {
 					  )
 				  )
 		);
+
 		$this->dispatch('\OCA\Circles::onMemberNew', ['circle' => $circle, 'member' => $member]);
 
 		$this->notificationOnMemberNew($circle, $member);
@@ -340,6 +342,7 @@ class EventsService {
 					  )
 				  )
 		);
+
 		$this->dispatch('\OCA\Circles::onMemberLeaving', ['circle' => $circle, 'member' => $member]);
 
 		$this->deleteNotification('membership', $member->getMemberId());
@@ -747,9 +750,10 @@ class EventsService {
 	 * Called when the circle's settings are changed
 	 *
 	 * @param Circle $circle
+	 * @param array  $oldSettings
 	 */
-	public function onSettingsChange(Circle $circle) {
-		$this->dispatch('\OCA\Circles::onSettingsChange', ['circle' => $circle]);
+	public function onSettingsChange(Circle $circle, array $oldSettings = []) {
+		$this->dispatch('\OCA\Circles::onSettingsChange',  ['circle' => $circle, 'oldSettings' => $oldSettings]);
 	}
 
 
