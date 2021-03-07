@@ -188,8 +188,8 @@ class ShareByCircleProvider extends CircleProviderRequest implements IShareProvi
 
 			$circle =
 				$this->circlesRequest->getCircle($share->getSharedWith(), $share->getSharedby());
-			$circle->getHigherViewer()
-				   ->hasToBeMember();
+			$circle->getHigherViewer();
+				   // ->hasToBeMember();
 
 			Circles::shareToCircle(
 				$circle->getUniqueId(), 'files', '',

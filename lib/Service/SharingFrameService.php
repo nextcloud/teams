@@ -157,8 +157,8 @@ class SharingFrameService {
 		);
 		try {
 			$circle = $this->circlesRequest->getCircle($circleUniqueId, $this->userId);
-			$circle->getHigherViewer()
-				   ->hasToBeMember();
+			$circle->getHigherViewer();
+				   // ->hasToBeMember();
 
 			$frame->setCircle($circle);
 
