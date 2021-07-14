@@ -127,7 +127,7 @@ class CoreQueryBuilder extends NC22ExtendedQueryBuilder {
 				],
 				self::INITIATOR => [
 					self::OPTIONS => [
-						'mustBeMember' => true,
+						'minimumLevel' => Member::LEVEL_MEMBER,
 						'canBeVisitor' => false
 					],
 					self::BASED_ON,
@@ -394,6 +394,9 @@ class CoreQueryBuilder extends NC22ExtendedQueryBuilder {
 
 		if ($circle->getDisplayName() !== '') {
 			$this->searchInDBField('display_name', '%' . $circle->getDisplayName() . '%');
+		}
+		if ($circle->getSource() > 0) {
+			$this->limitInt('source', $circle->getSource());
 		}
 		if ($circle->getConfig() > 0) {
 			$this->limitBitwise('config', $circle->getConfig());
@@ -1241,7 +1244,6 @@ class CoreQueryBuilder extends NC22ExtendedQueryBuilder {
 			array_push($levelCheck, $this->generateAlias($alias, self::DIRECT_INITIATOR, $options));
 		}
 
-		$filterPersonalCircle = $this->getBool('filterPersonalCircle', $options, true);
 
 		$expr = $this->expr();
 
@@ -1251,7 +1253,7 @@ class CoreQueryBuilder extends NC22ExtendedQueryBuilder {
 		// - 4 (Visible to everyone)
 		$orX = $expr->orX();
 
-		if ($filterPersonalCircle) {
+		if (!$this->getBool('filterPersonalCircles', $options, false)) {
 			$orX->add(
 				$expr->andX(
 					$this->exprLimitBitwise('config', Circle::CFG_PERSONAL, $aliasMembershipCircle),
@@ -1260,18 +1262,19 @@ class CoreQueryBuilder extends NC22ExtendedQueryBuilder {
 			);
 		}
 
+		$minimumLevel = $this->getInt('minimumLevel', $options);
 		$andXMember = $expr->andX();
 		$andXMember->add(
-			$this->orXCheckLevel($levelCheck, Member::LEVEL_MEMBER),
+			$this->orXCheckLevel($levelCheck, $minimumLevel)
 		);
-		if ($filterPersonalCircle) {
+		if (!$this->getBool('includePersonalCircles', $options, false)) {
 			$andXMember->add(
 				$this->exprFilterBitwise('config', Circle::CFG_PERSONAL, $aliasMembershipCircle)
 			);
 		}
 		$orX->add($andXMember);
 
-		if (!$this->getBool('mustBeMember', $options, true)) {
+		if ($minimumLevel === 0) {
 			$orX->add($this->exprLimitBitwise('config', Circle::CFG_VISIBLE, $alias));
 		}
 		if ($this->getBool('canBeVisitor', $options, false)) {
@@ -1308,15 +1311,10 @@ class CoreQueryBuilder extends NC22ExtendedQueryBuilder {
 
 
 	/**
-	 * CFG_SINGLE, CFG_HIDDEN and CFG_BACKEND means hidden from listing.
-	 *
 	 * @param string $aliasCircle
 	 * @param int $flag
 	 */
-	public function filterCircles(
-		string $aliasCircle,
-		int $flag = Circle::CFG_SINGLE | Circle::CFG_HIDDEN | Circle::CFG_BACKEND
-	): void {
+	public function filterCircles(string $aliasCircle, int $flag): void {
 		if ($flag === 0) {
 			return;
 		}

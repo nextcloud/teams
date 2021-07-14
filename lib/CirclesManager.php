@@ -41,6 +41,7 @@ use OCA\Circles\Exceptions\InitiatorNotConfirmedException;
 use OCA\Circles\Exceptions\InitiatorNotFoundException;
 use OCA\Circles\Exceptions\InvalidIdException;
 use OCA\Circles\Exceptions\MemberNotFoundException;
+use OCA\Circles\Exceptions\MembershipNotFoundException;
 use OCA\Circles\Exceptions\OwnerNotFoundException;
 use OCA\Circles\Exceptions\RemoteInstanceException;
 use OCA\Circles\Exceptions\RemoteNotFoundException;
@@ -52,9 +53,12 @@ use OCA\Circles\Exceptions\UserTypeNotFoundException;
 use OCA\Circles\Model\Circle;
 use OCA\Circles\Model\FederatedUser;
 use OCA\Circles\Model\Member;
+use OCA\Circles\Model\Membership;
+use OCA\Circles\Model\Probes\CircleProbe;
 use OCA\Circles\Service\CircleService;
 use OCA\Circles\Service\FederatedUserService;
 use OCA\Circles\Service\MemberService;
+use OCA\Circles\Service\MembershipService;
 use OCP\IUserSession;
 
 /**
@@ -77,6 +81,9 @@ class CirclesManager {
 	/** @var MemberService */
 	private $memberService;
 
+	/** @var MembershipService */
+	private $membershipService;
+
 
 	/**
 	 * CirclesManager constructor.
@@ -91,11 +98,13 @@ class CirclesManager {
 		FederatedUserService $federatedUserService,
 		CircleService $circleService,
 		MemberService $memberService,
+		MembershipService $membershipService,
 		CirclesQueryHelper $circlesQueryHelper
 	) {
 		$this->federatedUserService = $federatedUserService;
 		$this->circleService = $circleService;
 		$this->memberService = $memberService;
+		$this->membershipService = $membershipService;
 		$this->circlesQueryHelper = $circlesQueryHelper;
 	}
 
@@ -267,8 +276,8 @@ class CirclesManager {
 	 * @throws InitiatorNotFoundException
 	 * @throws RequestBuilderException
 	 */
-	public function getCircles(): array {
-		return $this->circleService->getCircles();
+	public function getCircles(?CircleProbe $probe = null): array {
+		return $this->circleService->getCircles($probe);
 	}
 
 
@@ -297,6 +306,19 @@ class CirclesManager {
 //		$this->federatedUserService->bypassCurrentUserCondition(true);
 //		$this->circleService->getCircles();
 //	}
+
+
+	/**
+	 * @param string $circleId
+	 * @param string $singleId
+	 *
+	 * @return Membership
+	 * @throws MembershipNotFoundException
+	 * @throws RequestBuilderException
+	 */
+	public function getLink(string $circleId, string $singleId): Membership {
+		return $this->membershipService->getMembership($circleId, $singleId);
+	}
 
 
 	/**

@@ -63,6 +63,7 @@ use OCA\Circles\Model\Federated\FederatedEvent;
 use OCA\Circles\Model\FederatedUser;
 use OCA\Circles\Model\ManagedModel;
 use OCA\Circles\Model\Member;
+use OCA\Circles\Model\Probes\CircleProbe;
 use OCA\Circles\StatusCode;
 
 /**
@@ -439,43 +440,25 @@ class CircleService {
 	}
 
 
+
+
 	/**
-	 * @param Circle|null $circleFilter
-	 * @param Member|null $memberFilter
-	 * @param SimpleDataStore|null $params
+	 * @param CircleProbe|null $probe
 	 *
 	 * @return Circle[]
 	 * @throws InitiatorNotFoundException
 	 * @throws RequestBuilderException
 	 */
-	public function getCircles(
-		?Circle $circleFilter = null,
-		?Member $memberFilter = null,
-		?SimpleDataStore $params = null
-	): array {
+	public function getCircles(?CircleProbe $probe = null): array {
 		$this->federatedUserService->mustHaveCurrentUser();
 
-		if ($params === null) {
-			$params = new SimpleDataStore();
+		if (is_null($probe)) {
+			$probe = new CircleProbe();
 		}
-		$params->default(
-			[
-				'limit' => -1,
-				'offset' => 0,
-				'mustBeMember' => false,
-				'includeHiddenCircles' => false,
-				'includeBackendCircles' => false,
-				'includeSystemCircles' => false,
-				'includePersonalCircles' => false
-			]
-		);
 
 		return $this->circleRequest->getCircles(
-			$circleFilter,
-			$memberFilter,
 			$this->federatedUserService->getCurrentUser(),
-			$this->federatedUserService->getRemoteInstance(),
-			$params
+			$probe
 		);
 	}
 

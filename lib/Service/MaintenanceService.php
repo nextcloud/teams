@@ -31,7 +31,6 @@ declare(strict_types=1);
 
 namespace OCA\Circles\Service;
 
-use ArtificialOwl\MySmallPhpTools\Model\SimpleDataStore;
 use ArtificialOwl\MySmallPhpTools\Traits\Nextcloud\nc22\TNC22Logger;
 use Exception;
 use OCA\Circles\Db\CircleRequest;
@@ -41,6 +40,7 @@ use OCA\Circles\Exceptions\MaintenanceException;
 use OCA\Circles\Exceptions\RequestBuilderException;
 use OCA\Circles\Model\Circle;
 use OCA\Circles\Model\Member;
+use OCA\Circles\Model\Probes\CircleProbe;
 use OCP\IUserManager;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -315,10 +315,13 @@ class MaintenanceService {
 	 * @throws InitiatorNotFoundException
 	 */
 	private function refreshDisplayName(): void {
-		$params = new SimpleDataStore(['includeSystemCircles' => true]);
 		$circleFilter = new Circle();
 		$circleFilter->setConfig(Circle::CFG_SINGLE);
-		$circles = $this->circleService->getCircles($circleFilter, null, $params);
+
+		$probe = new CircleProbe();
+		$probe->setFilterCircle($circleFilter);
+		$probe->includeSystemCircles();
+		$circles = $this->circleService->getCircles($probe);
 
 		foreach ($circles as $circle) {
 			$owner = $circle->getOwner();

@@ -312,7 +312,7 @@ class ShareWrapperRequest extends ShareWrapperRequestBuilder {
 		bool $getData = false
 	): array {
 		$qb = $this->getShareSelectSql();
-		$qb->setOptions([CoreQueryBuilder::SHARE], ['getData' => $getData, 'filterPersonalCircle' => false]);
+		$qb->setOptions([CoreQueryBuilder::SHARE], ['getData' => $getData, 'includePersonalCircles' => true]);
 		if ($getData) {
 			$qb->leftJoinCircle(CoreQueryBuilder::SHARE, null, 'share_with');
 		}

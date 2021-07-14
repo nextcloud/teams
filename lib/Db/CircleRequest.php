@@ -31,7 +31,6 @@ declare(strict_types=1);
 
 namespace OCA\Circles\Db;
 
-use ArtificialOwl\MySmallPhpTools\Model\SimpleDataStore;
 use OCA\Circles\Exceptions\CircleNotFoundException;
 use OCA\Circles\Exceptions\FederatedUserNotFoundException;
 use OCA\Circles\Exceptions\InvalidIdException;
@@ -43,6 +42,7 @@ use OCA\Circles\Model\Circle;
 use OCA\Circles\Model\Federated\RemoteInstance;
 use OCA\Circles\Model\FederatedUser;
 use OCA\Circles\Model\Member;
+use OCA\Circles\Model\Probes\CircleProbe;
 
 /**
  * Class CircleRequest
@@ -151,54 +151,42 @@ class CircleRequest extends CircleRequestBuilder {
 
 
 	/**
-	 * @param Circle|null $circleFilter
-	 * @param Member|null $memberFilter
 	 * @param IFederatedUser|null $initiator
-	 * @param RemoteInstance|null $remoteInstance
-	 * @param SimpleDataStore $params
+	 * @param CircleProbe $probe
 	 *
 	 * @return Circle[]
 	 * @throws RequestBuilderException
 	 */
-	public function getCircles(
-		?Circle $circleFilter,
-		?Member $memberFilter,
-		?IFederatedUser $initiator,
-		?RemoteInstance $remoteInstance,
-		SimpleDataStore $params
-	): array {
+	public function getCircles(?IFederatedUser $initiator, CircleProbe $probe): array {
 		$qb = $this->getCircleSelectSql();
 		$qb->leftJoinOwner(CoreQueryBuilder::CIRCLE);
 		$qb->setOptions(
 			[CoreQueryBuilder::CIRCLE],
-			[
-				'getData' => true,
-				'mustBeMember' => $params->gBool('mustBeMember'),
-				'initiatorDirectMember' => true
-			]
+			array_merge(
+				$probe->getAsOptions(),
+				[
+					'getData' => true,
+					'initiatorDirectMember' => true
+				]
+			)
 		);
 
-		if (!$params->gBool('includeSystemCircles')) {
-			$qb->filterCircles(
-				CoreQueryBuilder::CIRCLE,
-				Circle::CFG_SINGLE | Circle::CFG_HIDDEN | Circle::CFG_BACKEND
-			);
-		}
+		$qb->filterCircles(CoreQueryBuilder::CIRCLE, $probe->filtered());
 		if (!is_null($initiator)) {
 			$qb->limitToInitiator(CoreQueryBuilder::CIRCLE, $initiator);
 		}
-		if (!is_null($memberFilter)) {
-			$qb->limitToDirectMembership(CoreQueryBuilder::CIRCLE, $memberFilter);
+		if ($probe->hasFilterMember()) {
+			$qb->limitToDirectMembership(CoreQueryBuilder::CIRCLE, $probe->getFilterMember());
 		}
-		if (!is_null($circleFilter)) {
-			$qb->filterCircle($circleFilter);
+		if ($probe->hasFilterCircle()) {
+			$qb->filterCircle($probe->getFilterCircle());
 		}
-		if (!is_null($remoteInstance)) {
-			$qb->limitToRemoteInstance(CoreQueryBuilder::CIRCLE, $remoteInstance, false);
+		if ($probe->hasFilterRemoteInstance()) {
+			$qb->limitToRemoteInstance(CoreQueryBuilder::CIRCLE, $probe->getFilterRemoteInstance(), false);
 		}
 
 		$qb->countMembers(CoreQueryBuilder::CIRCLE);
-		$qb->chunk($params->gInt('offset'), $params->gInt('limit'));
+		$qb->chunk($probe->getItemsOffset(), $probe->getItemsLimit());
 
 		return $this->getItemsFromRequest($qb);
 	}
