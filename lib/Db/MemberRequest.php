@@ -316,6 +316,10 @@ class MemberRequest extends MemberRequestBuilder {
 		?FederatedUser $initiator = null,
 		?MemberProbe $probe = null
 	): Member {
+		if (is_null($probe)) {
+			$probe = new MemberProbe();
+		}
+
 		$qb = $this->getMemberSelectSql();
 		$qb->limitToMemberId($memberId);
 		$qb->setOptions([CoreQueryBuilder::MEMBER], $probe->getAsOptions());

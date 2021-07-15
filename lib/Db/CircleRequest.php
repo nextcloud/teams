@@ -252,7 +252,7 @@ class CircleRequest extends CircleRequestBuilder {
 		if (!is_null($initiator)) {
 			$qb->limitToInitiator(CoreQueryBuilder::CIRCLE, $initiator);
 		}
-		if (!is_null($probe->getFilterRemoteInstance())) {
+		if ($probe->hasFilterRemoteInstance()) {
 			$qb->limitToRemoteInstance(CoreQueryBuilder::CIRCLE, $probe->getFilterRemoteInstance(), false);
 		}
 		$qb->countMembers(CoreQueryBuilder::CIRCLE);
