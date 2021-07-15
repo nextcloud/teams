@@ -128,7 +128,7 @@ class CoreQueryBuilder extends NC22ExtendedQueryBuilder {
 				self::INITIATOR => [
 					self::OPTIONS => [
 						'minimumLevel' => Member::LEVEL_MEMBER,
-						'canBeVisitor' => false
+						'viewableAsVisitor' => false
 					],
 					self::BASED_ON,
 					self::INHERITED_BY => [
@@ -1211,7 +1211,7 @@ class CoreQueryBuilder extends NC22ExtendedQueryBuilder {
 			);
 
 			$default = [];
-			if ($this->getBool('canBeVisitor', $options, false)) {
+			if ($this->getBool('viewableAsVisitor', $options, false)) {
 				$default = [
 					'user_id' => $initiator->getUserId(),
 					'single_id' => $initiator->getSingleId(),
@@ -1253,6 +1253,7 @@ class CoreQueryBuilder extends NC22ExtendedQueryBuilder {
 		// - 4 (Visible to everyone)
 		$orX = $expr->orX();
 
+		// filterPersonalCircles will remove access to Personal Circles as Owner
 		if (!$this->getBool('filterPersonalCircles', $options, false)) {
 			$orX->add(
 				$expr->andX(
@@ -1267,6 +1268,7 @@ class CoreQueryBuilder extends NC22ExtendedQueryBuilder {
 		$andXMember->add(
 			$this->orXCheckLevel($levelCheck, $minimumLevel)
 		);
+
 		if (!$this->getBool('includePersonalCircles', $options, false)) {
 			$andXMember->add(
 				$this->exprFilterBitwise('config', Circle::CFG_PERSONAL, $aliasMembershipCircle)
@@ -1277,11 +1279,13 @@ class CoreQueryBuilder extends NC22ExtendedQueryBuilder {
 		if ($minimumLevel === 0) {
 			$orX->add($this->exprLimitBitwise('config', Circle::CFG_VISIBLE, $alias));
 		}
-		if ($this->getBool('canBeVisitor', $options, false)) {
+
+		// if Member can be Visitor, we only filter access to Personal Circles
+		if ($this->getBool('viewableAsVisitor', $options, false)) {
 			// TODO: should find a better way, also filter on remote initiator on non-federated ?
 			$orX->add($this->exprFilterInt('config', Circle::CFG_PERSONAL, $alias));
 		}
-		if ($this->getBool('canBeVisitorOnOpen', $options, false)) {
+		if ($this->getBool('viewableThroughKeyhole', $options, false)) {
 			$andOpen = $expr->andX();
 			$andOpen->add($this->exprLimitBitwise('config', Circle::CFG_OPEN, $alias));
 			$andOpen->add($this->exprFilterBitwise('config', Circle::CFG_REQUEST, $alias));

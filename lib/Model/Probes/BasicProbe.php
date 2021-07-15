@@ -256,12 +256,20 @@ class BasicProbe implements IQueryProbe {
 	public function getAsOptions(): array {
 		return array_merge(
 			$this->options, [
-							  'offset'     => $this->getItemsOffset(),
-							  'limit'      => $this->getItemsLimit(),
-							  'details'    => $this->getDetails(),
+							  'offset' => $this->getItemsOffset(),
+							  'limit' => $this->getItemsLimit(),
+							  'details' => $this->getDetails(),
 							  'detailsAll' => ($this->getDetails() === self::DETAILS_ALL)
 						  ]
 		);
+	}
+
+
+	/**
+	 * @return array
+	 */
+	public function JsonSerialize(): array {
+		return $this->getAsOptions();
 	}
 
 }

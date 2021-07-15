@@ -64,6 +64,7 @@ use OCA\Circles\Model\FederatedUser;
 use OCA\Circles\Model\ManagedModel;
 use OCA\Circles\Model\Member;
 use OCA\Circles\Model\Probes\CircleProbe;
+use OCA\Circles\Model\Probes\MemberProbe;
 use OCA\Circles\StatusCode;
 
 /**
@@ -427,19 +428,16 @@ class CircleService {
 	 */
 	public function getCircle(
 		string $circleId,
-		int $filter = Circle::CFG_BACKEND | Circle::CFG_SINGLE | Circle::CFG_HIDDEN
+		?CircleProbe $probe = null
 	): Circle {
 		$this->federatedUserService->mustHaveCurrentUser();
 
 		return $this->circleRequest->getCircle(
 			$circleId,
 			$this->federatedUserService->getCurrentUser(),
-			$this->federatedUserService->getRemoteInstance(),
-			$filter
+			$probe
 		);
 	}
-
-
 
 
 	/**
@@ -580,9 +578,12 @@ class CircleService {
 	 * @throws RequestBuilderException
 	 */
 	public function isCircleFull(Circle $circle): bool {
-		$filter = new Member();
-		$filter->setLevel(Member::LEVEL_MEMBER);
-		$members = $this->memberRequest->getMembers($circle->getSingleId(), null, null, $filter);
+		$filterMember = new Member();
+		$filterMember->setLevel(Member::LEVEL_MEMBER);
+		$probe = new MemberProbe();
+		$probe->setFilterMember($filterMember);
+
+		$members = $this->memberRequest->getMembers($circle->getSingleId(), null, $probe);
 
 		$limit = $this->getInt('members_limit', $circle->getSettings());
 		if ($limit === 0) {

@@ -33,7 +33,6 @@ namespace OCA\Circles\Model\Probes;
 
 
 use OCA\Circles\Model\Circle;
-use OCA\Circles\Model\Member;
 
 
 /**
@@ -41,7 +40,7 @@ use OCA\Circles\Model\Member;
  *
  * @package OCA\Circles\Model\Probes
  */
-class CircleProbe extends BasicProbe {
+class CircleProbe extends MemberProbe {
 
 
 	/** @var array */
@@ -51,74 +50,8 @@ class CircleProbe extends BasicProbe {
 		Circle::CFG_BACKEND,
 	];
 
-
-	/** @var int */
-	private $minimumLevel = 0;
-
-	/** @var bool */
-	private $canBeVisitor = false;
-
 	/** @var int */
 	private $include = 0;
-
-
-	/**
-	 * @return $this
-	 */
-	public function canBeVisitor(): self {
-		$this->canBeVisitor = true;
-	}
-
-	/**
-	 * @return bool
-	 */
-	public function isViewableAsVisitor(): bool {
-		return $this->canBeVisitor;
-	}
-
-
-	/**
-	 * @return int
-	 */
-	public function getMinimumLevel(): int {
-		return $this->minimumLevel;
-	}
-
-	/**
-	 * @return $this
-	 */
-	public function mustBeMember(): self {
-		$this->minimumLevel = Member::LEVEL_MEMBER;
-
-		return $this;
-	}
-
-	/**
-	 * @return $this
-	 */
-	public function mustBeModerator(): self {
-		$this->minimumLevel = Member::LEVEL_MODERATOR;
-
-		return $this;
-	}
-
-	/**
-	 * @return $this
-	 */
-	public function mustBeAdmin(): self {
-		$this->minimumLevel = Member::LEVEL_ADMIN;
-
-		return $this;
-	}
-
-	/**
-	 * @return $this
-	 */
-	public function mustBeOwner(): self {
-		$this->minimumLevel = Member::LEVEL_OWNER;
-
-		return $this;
-	}
 
 
 	/**
@@ -229,8 +162,6 @@ class CircleProbe extends BasicProbe {
 	public function getAsOptions(): array {
 		return array_merge(
 			[
-				'minimumLevel' => $this->getMinimumLevel(),
-				'canBeVisitor' => $this->isViewableAsVisitor(),
 				'included' => $this->included(),
 				'includeHiddenCircles' => $this->isIncluded(Circle::CFG_HIDDEN),
 				'includeBackendCircles' => $this->isIncluded(Circle::CFG_BACKEND),
@@ -242,6 +173,9 @@ class CircleProbe extends BasicProbe {
 	}
 
 
+	/**
+	 * @return array
+	 */
 	public function JsonSerialize(): array {
 		return $this->getAsOptions();
 	}
