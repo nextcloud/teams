@@ -1288,7 +1288,10 @@ class CoreQueryBuilder extends NC22ExtendedQueryBuilder {
 		if ($this->getBool('viewableThroughKeyhole', $options, false)) {
 			$andOpen = $expr->andX();
 			$andOpen->add($this->exprLimitBitwise('config', Circle::CFG_OPEN, $alias));
+			$andOpen->add($this->exprLimitBitwise('config', Circle::CFG_VISIBLE, $alias));
+			if (!$this->configService->getAppValueBool(ConfigService::KEYHOLE_CFG_REQUEST)) {
 			$andOpen->add($this->exprFilterBitwise('config', Circle::CFG_REQUEST, $alias));
+			}
 			$orX->add($andOpen);
 		}
 
