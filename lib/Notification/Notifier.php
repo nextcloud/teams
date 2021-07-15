@@ -42,6 +42,8 @@ use OCA\Circles\Exceptions\InvalidIdException;
 use OCA\Circles\Exceptions\MemberNotFoundException;
 use OCA\Circles\Exceptions\RequestBuilderException;
 use OCA\Circles\Exceptions\SingleCircleNotFoundException;
+use OCA\Circles\Model\Probes\CircleProbe;
+use OCA\Circles\Model\Probes\MemberProbe;
 use OCA\Circles\Service\FederatedUserService;
 use OCA\Circles\Service\MemberService;
 use OCP\Contacts\IManager;
@@ -170,10 +172,13 @@ class Notifier implements INotifier {
 	 */
 	private function prepareMemberNotification(INotification $notification) {
 		$this->federatedUserService->initCurrentUser();
+		$probe = new MemberProbe();
+		$probe->canBeVisitor();
+
 		$member = $this->memberService->getMemberById(
 			$notification->getObjectId(),
 			'',
-			true
+			$probe
 		);
 
 		switch ($notification->getSubject()) {
